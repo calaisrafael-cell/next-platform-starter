@@ -1,0 +1,344 @@
+<p>Olá, {{ticket.requester.name}}, tudo bem? 😄<br><br>
+Sou {{ticket.assignee.name}}, e estarei com você durante todo o processo de onboarding, que tem duração de até 30 dias.<br>
+Conforme informado no e-mail de boas-vindas, o processo é dividido por etapas.<br><br>
+Abaixo, você encontrará os próximos passos e orientações personalizadas conforme o seu caso:</p>
+
+<style>
+  .highlight-warning { color:#b85c00; font-weight:600; }
+  a { color:#0056d2; text-decoration:underline; font-weight:500; }
+  a:hover { color:#003a94; }
+
+  /* — Layout compacto — */
+  .onboarding { font-size:13px; line-height:1.35; }
+  .onboarding .step { margin:4px 0; border:1px solid #eee; border-radius:6px; padding:6px 8px; position:relative; }
+  .onboarding .step-head { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .onboarding .step-title { display:flex; align-items:center; gap:4px; font-weight:600; cursor:pointer; user-select:none; white-space:nowrap; }
+  .onboarding .step-actions { white-space:nowrap; display:flex; align-items:center; gap:4px; font-size:12px; }
+
+  /* controles invisíveis no topo */
+  .onboarding .ctrl { position:absolute; left:-9999px; }
+
+  /* chevron abrir/fechar */
+  .onboarding .step-title::before { content:"▸"; display:inline-block; width:1em; }
+  #step1-open:checked ~ .steps .step1 .step-title::before,
+  #step2-open:checked ~ .steps .step2 .step-title::before,
+  #step3-open:checked ~ .steps .step3 .step-title::before,
+  #step4-open:checked ~ .steps .step4 .step-title::before,
+  #step5-open:checked ~ .steps .step5 .step-title::before,
+  #step6-open:checked ~ .steps .step6 .step-title::before { content:"▾"; }
+
+  /* ⏳ à esquerda do título; some ao concluir */
+  .onboarding .loading-icon::before { content:"⏳"; margin-right:4px; }
+  #step1-done:checked ~ .steps .step1 .loading-icon::before,
+  #step2-done:checked ~ .steps .step2 .loading-icon::before,
+  #step3-done:checked ~ .steps .step3 .loading-icon::before,
+  #step4-done:checked ~ .steps .step4 .loading-icon::before,
+  #step5-done:checked ~ .steps .step5 .loading-icon::before,
+  #step6-done:checked ~ .steps .step6 .loading-icon::before { content:""; }
+
+  /* botão Concluído: ☐ → ✅ */
+  .onboarding .done-label { cursor:pointer; user-select:none; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+  .onboarding .done-label::before { content:"☐"; display:inline-block; width:1em; }
+  #step1-done:checked ~ .steps .step1 .done-label::before,
+  #step2-done:checked ~ .steps .step2 .done-label::before,
+  #step3-done:checked ~ .steps .step3 .done-label::before,
+  #step4-done:checked ~ .steps .step4 .done-label::before,
+  #step5-done:checked ~ .steps .step5 .done-label::before,
+  #step6-done:checked ~ .steps .step6 .done-label::before { content:"✅"; }
+
+  /* corpo fechado por padrão / abre com step-open */
+  .onboarding .step-body { margin-top:4px; display:none; }
+  #step1-open:checked ~ .steps .step1 .step-body,
+  #step2-open:checked ~ .steps .step2 .step-body,
+  #step3-open:checked ~ .steps .step3 .step-body,
+  #step4-open:checked ~ .steps .step4 .step-body,
+  #step5-open:checked ~ .steps .step5 .step-body,
+  #step6-open:checked ~ .steps .step6 .step-body { display:block; }
+
+  /* concluído: risca título, deixa só “Etapa N” e fecha conteúdo */
+  #step1-done:checked ~ .steps .step1 .step-title,
+  #step2-done:checked ~ .steps .step2 .step-title,
+  #step3-done:checked ~ .steps .step3 .step-title,
+  #step4-done:checked ~ .steps .step4 .step-title,
+  #step5-done:checked ~ .steps .step5 .step-title,
+  #step6-done:checked ~ .steps .step6 .step-title { color:gray; text-decoration:line-through; cursor:default; pointer-events:none; }
+  #step1-done:checked ~ .steps .step1 .title-text,
+  #step2-done:checked ~ .steps .step2 .title-text,
+  #step3-done:checked ~ .steps .step3 .title-text,
+  #step4-done:checked ~ .steps .step4 .title-text,
+  #step5-done:checked ~ .steps .step5 .title-text,
+  #step6-done:checked ~ .steps .step6 .title-text { display:none; }
+  #step1-done:checked ~ .steps .step1 .step-body,
+  #step2-done:checked ~ .steps .step2 .step-body,
+  #step3-done:checked ~ .steps .step3 .step-body,
+  #step4-done:checked ~ .steps .step4 .step-body,
+  #step5-done:checked ~ .steps .step5 .step-body,
+  #step6-done:checked ~ .steps .step6 .step-body { display:none !important; }
+
+  /* esconder TODAS as etapas concluídas (sumir de baixo) */
+  #step1-done:checked ~ .steps .step1,
+  #step2-done:checked ~ .steps .step2,
+  #step3-done:checked ~ .steps .step3,
+  #step4-done:checked ~ .steps .step4,
+  #step5-done:checked ~ .steps .step5,
+  #step6-done:checked ~ .steps .step6 { display:none; }
+
+  /* — Faixa “✅ Concluído” + badges — */
+  .inline-summary { margin:4px 0 6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .inline-summary .label { display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+  .inline-summary .label::before { content:"✅"; }
+  .badge { display:none; padding:2px 6px; border-radius:999px; border:1px solid #d1d5db; background:#fff; font-size:12px; cursor:pointer; }
+
+  /* badges aparecem quando etapa está concluída */
+  #step1-done:checked ~ .inline-summary .b1 { display:inline-flex; }
+  #step2-done:checked ~ .inline-summary .b2 { display:inline-flex; }
+  #step3-done:checked ~ .inline-summary .b3 { display:inline-flex; }
+  #step4-done:checked ~ .inline-summary .b4 { display:inline-flex; }
+  #step5-done:checked ~ .inline-summary .b5 { display:inline-flex; }
+  #step6-done:checked ~ .inline-summary .b6 { display:inline-flex; }
+
+  /* estados controlados via JS */
+  .badge.disabled { pointer-events:none; opacity:.45; }
+  .done-label.is-disabled { pointer-events:none; opacity:.45; }
+</style>
+
+<div class="onboarding">
+  <!-- ===== Controles no topo (invisíveis) ===== -->
+  <input id="step1-open" type="checkbox" class="ctrl">
+  <input id="step1-done" type="checkbox" class="ctrl">
+  <input id="step2-open" type="checkbox" class="ctrl">
+  <input id="step2-done" type="checkbox" class="ctrl">
+  <input id="step3-open" type="checkbox" class="ctrl">
+  <input id="step3-done" type="checkbox" class="ctrl">
+  <input id="step4-open" type="checkbox" class="ctrl">
+  <input id="step4-done" type="checkbox" class="ctrl">
+  <input id="step5-open" type="checkbox" class="ctrl">
+  <input id="step5-done" type="checkbox" class="ctrl">
+  <input id="step6-open" type="checkbox" class="ctrl">
+  <input id="step6-done" type="checkbox" class="ctrl">
+
+  <!-- ===== Linha superior: “✅ Concluído” + badges clicáveis ===== -->
+  <div class="inline-summary">
+    <span class="label">Concluído</span>
+    <label class="badge b1" data-step="1" for="step1-done">Etapa 1</label>
+    <label class="badge b2" data-step="2" for="step2-done">Etapa 2</label>
+    <label class="badge b3" data-step="3" for="step3-done">Etapa 3</label>
+    <label class="badge b4" data-step="4" for="step4-done">Etapa 4</label>
+    <label class="badge b5" data-step="5" for="step5-done">Etapa 5</label>
+    <label class="badge b6" data-step="6" for="step6-done">Etapa 6</label>
+  </div>
+
+  <!-- ===== Lista de etapas ===== -->
+  <div class="steps">
+    <!-- ETAPA 1 -->
+    <div class="step step1">
+      <div class="step-head">
+        <label class="step-title" for="step1-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 1</span>
+          <span class="title-text">– Criar sua conta na plataforma eNotas</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step1-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        🔎 Já possui conta:<br>
+        <label><input type="checkbox"> Verifiquei que sua conta já foi criada.</label><br>
+        <label><input type="checkbox"> Verifiquei que você já tem uma conta com este e-mail. Deseja reativá-la?</label><br>
+        🆕 Ainda não criou conta: Clique <a href="#" target="_blank" rel="noopener noreferrer">aqui</a> para criar sua conta.<br>
+        ⚠️ Falha de provisionamento: Houve um erro ao cadastrar sua empresa junto à Receita Federal. Já acionei nosso time de desenvolvimento para resolver.<br>
+        ❗ Município não integrado: Atualmente, não temos integração com o seu município. Será necessário migrar para o plano Emissor Business. Prazo estimado: 2 a 6 meses.
+      </div>
+    </div>
+
+    <!-- ETAPA 2 -->
+    <div class="step step2">
+      <div class="step-head">
+        <label class="step-title" for="step2-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 2</span>
+          <span class="title-text">– Cadastrar sua empresa</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step2-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        Identificamos que:<br>
+        Seu CNPJ nº XXXXXXXXXXXXXX está registrado em Cidade/UF<br>
+        Enquadramento na Receita Federal:<br>
+        <label><input type="checkbox"> Simples Nacional – MEI</label><br>
+        <label><input type="checkbox"> Simples Nacional – ME/EPP</label><br>
+        <label><input type="checkbox"> Outro enquadramento</label><br>
+        ➡️ Se for MEI ou ME/EPP que utiliza o Portal de Gestão NFS-e Contribuinte:<br>
+        Confirme com sua contabilidade se suas notas fiscais serão emitidas via Portal Nacional e me dê um retorno.<br>
+        Será necessário credenciar sua empresa no portal. Veja as instruções neste
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773611534221-Como-solicitar-o-credenciamento-para-Emiss%C3%A3o-de-Nota-Fiscal-de-Servi%C3%A7o-Eletr%C3%B4nica-no-Modelo-Nacional" target="_blank" rel="noopener noreferrer">artigo</a>.
+      </div>
+    </div>
+
+    <!-- ETAPA 3 -->
+    <div class="step step3">
+      <div class="step-head">
+        <label class="step-title" for="step3-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 3</span>
+          <span class="title-text">– Configurar a emissão de notas</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step3-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        De acordo com o tipo de nota que você vai emitir, siga as instruções correspondentes.<br><br>
+        <label><input type="checkbox"> Nota Fiscal de Serviço (NFS-e)</label><br>
+        1- Autenticação no portal da prefeitura:<br>
+        <label><input type="checkbox"> Via Certificado Digital A1 → Faça o upload na sua conta eNotas
+          <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773480148493--Menu-Empresa-Como-inserir-ou-atualizar-meu-certificado-digital-na-eNotas" target="_blank" rel="noopener noreferrer">[artigo]</a>
+          ou adquira com <a href="https://enotas.brasilcertificados.com.br/" target="_blank" rel="noopener noreferrer">nosso parceiro</a>.
+        </label><br>
+        <label><input type="checkbox"> Via login, senha ou token → Siga as orientações do item 5 deste
+          <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773771326349--Menu-Empresa-Preenchimento-dos-Dados-Municipais-na-eNotas" target="_blank" rel="noopener noreferrer">[artigo]</a>.
+        </label><br>
+        2- Para preenchimento do cadastro eNotas, siga este
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773350857869-Como-configurar-o-Split-de-notas-no-meu-painel" target="_blank" rel="noopener noreferrer">[artigo]</a>.<br><br>
+        <label><input type="checkbox"> Nota Fiscal de Produto (NF-e)</label><br>
+        O uso do Certificado Digital A1 é obrigatório. Faça o upload na sua conta eNotas
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773480148493--Menu-Empresa-Como-inserir-ou-atualizar-meu-certificado-digital-na-eNotas" target="_blank" rel="noopener noreferrer">[artigo]</a>
+        ou adquira com <a href="https://enotas.brasilcertificados.com.br/" target="_blank" rel="noopener noreferrer">nosso parceiro</a>.<br>
+        Se for nota de produto digital, siga este
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773358565005--Menu-Empresa-Como-configurar-a-eNotas-para-emiss%C3%A3o-de-nota-de-produto-NF-e" target="_blank" rel="noopener noreferrer">[artigo]</a>.<br>
+        Se for nota de produto físico da Hotmart, siga este
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773318582541-Hotmart-Como-baixar-um-arquivo-de-vendas" target="_blank" rel="noopener noreferrer">[artigo]</a>.<br><br>
+        <label><input type="checkbox"> Split de Notas</label><br>
+        O uso do Certificado Digital A1 é obrigatório. Faça o upload na sua conta eNotas
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773350857869-Como-configurar-o-Split-de-notas-no-meu-painel" target="_blank" rel="noopener noreferrer">[artigo]</a>.
+      </div>
+    </div>
+
+    <!-- ETAPA 4 -->
+    <div class="step step4">
+      <div class="step-head">
+        <label class="step-title" for="step4-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 4</span>
+          <span class="title-text">– Emitir nota teste</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step4-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        Após a configuração da empresa, será necessário emitir uma nota de teste no valor de R$ 1,00, por tipo de nota configurada, para validar a comunicação com o órgão emissor.<br>
+        Se possível, a nota será cancelada após a emissão.<br>
+        📩 Enviarei por e-mail o PDF e XML dessa nota para que possa validar com sua contabilidade.
+      </div>
+    </div>
+
+    <!-- ETAPA 5 -->
+    <div class="step step5">
+      <div class="step-head">
+        <label class="step-title" for="step5-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 5</span>
+          <span class="title-text">– Integrar seu canal de vendas</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step5-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        Por onde você realiza suas vendas?_________________________________<br>
+        Enviaremos as orientações sobre a integração.<br>
+        <label><input type="checkbox"> Se usa Hotmart, confira este
+          <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773432368909-Hotmart-Como-habilitar-a-integra%C3%A3o-na-eNotas" target="_blank" rel="noopener noreferrer">[artigo de integração]</a>.
+        </label><br>
+        <span class="highlight-warning">Importante só realizar esta etapa após concluir a etapa anterior.</span>
+      </div>
+    </div>
+
+    <!-- ETAPA 6 -->
+    <div class="step step6">
+      <div class="step-head">
+        <label class="step-title" for="step6-open">
+          <span class="loading-icon"></span>
+          <span class="title-num">Etapa 6</span>
+          <span class="title-text">– Importar vendas antigas</span>
+        </label>
+        <div class="step-actions">
+          <label class="done-label" for="step6-done">Concluído</label>
+        </div>
+      </div>
+      <div class="step-body">
+        Nos informe o período das vendas anteriores à compra do seu plano eNotas, que deseja importar: de __/__/__ até __/__/__<br>
+        <label><input type="checkbox"> Se seu plano permite, faremos a importação conforme solicitado.</label><br>
+        <label><input type="checkbox"> Se usa Hotmart, siga o
+          <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773318582541-Hotmart-Como-baixar-um-arquivo-de-vendas" target="_blank" rel="noopener noreferrer">[artigo]</a>
+          e nos envie o arquivo em seguida.
+        </label><br>
+        Se seu plano permite, veja detalhes neste
+        <a href="https://atendimento.enotas.com.br/hc/pt-br/articles/35773756727565-Meu-plano-permite-importa%C3%A7%C3%A3o-de-vendas-antigas" target="_blank" rel="noopener noreferrer">link</a>.<br>
+        <span class="highlight-warning">⚠️ Importante:<br>
+        Caso esteja fazendo alterações cadastrais na Receita Federal, Prefeitura ou SEFAZ, nos avise para ajustarmos as configurações da plataforma.</span>
+      </div>
+    </div>
+  </div><!-- /.steps -->
+</div><!-- /.onboarding -->
+
+<script>
+(function () {
+  const ids = [1,2,3,4,5,6];
+  const done = i => document.getElementById(`step${i}-done`);
+  const badge = i => document.querySelector(`.badge[data-step="${i}"]`);
+  const doneLabel = i => document.querySelector(`.step.step${i} .done-label`);
+
+  function refreshUI() {
+    // 1) Regra para concluir: só habilita "Concluído" se todas as anteriores já estiverem concluídas
+    ids.forEach(i => {
+      const label = doneLabel(i);
+      if (!label) return;
+      let enable = true;
+      for (let j = 1; j < i; j++) {
+        if (!done(j).checked) { enable = false; break; }
+      }
+      label.classList.toggle('is-disabled', !enable);
+    });
+
+    // 2) Regra para VOLTAR na ordem:
+    //    uma badge k (k>=2) só fica clicável se não existir nenhuma etapa concluída anterior entre 2..k-1
+    ids.forEach(i => {
+      const b = badge(i);
+      if (!b) return;
+      if (!done(i).checked) { // não está concluída → some pela CSS; aqui só garantimos clicável desligado
+        b.classList.remove('disabled');
+        return;
+      }
+      if (i === 1) { // Etapa 1 pode sempre voltar
+        b.classList.remove('disabled');
+        return;
+      }
+      let hasEarlierChecked = false;
+      for (let j = 2; j < i; j++) {
+        if (done(j).checked) { hasEarlierChecked = true; break; }
+      }
+      b.classList.toggle('disabled', hasEarlierChecked);
+    });
+  }
+
+  // ligar listeners
+  ids.forEach(i => {
+    done(i).addEventListener('change', refreshUI);
+  });
+
+  // inicializar
+  refreshUI();
+})();
+</script>
+
+<br>
+Leia o nosso <a href="https://enotas.com.br/termos-de-uso/" target="_blank" rel="noopener noreferrer">Termo de Uso</a>.<br><br>
+Fico à disposição e aguardo seu retorno para seguirmos com o seu onboarding. 🚀<br><br>
+Atenciosamente,<br>
+{{ticket.assignee.name}}<br>
+Equipe Onboarding eNotas
